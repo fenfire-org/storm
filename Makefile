@@ -9,7 +9,7 @@ CLASSDIR=CLASSES/
 CLASSPATH=$(CLASSDIR):$(DEPENDS)/cryptix-jce-provider.jar:$(DEPENDS)/jython.jar:$(DEPENDS)/gisp.jar:$(DEPENDS)/dom4j.jar:$(DEPENDS)/log4j.jar:$(DEPENDS)/bamboo.jar:$(DEPENDS)/oncrpc.jar:$(DEPENDS)/jtidy.jar:$(DEPENDS)/xom-1.0b7.jar:$(DEPENDS)/je.jar:$(shell echo $$CLASSPATH)
 PYTHONPATH=-Dpython.path=.:$(DEPENDS)/jythonlib.jar:$(DEPENDS)/pythonlib.jar:../navidoc/:$(DEPENDS)/docutils.jar
 export CLASSPATH
-JAVAC=javac
+JAVAC?=javac
 JAVA=java -Dpython.cachedir=. -Dpython.path=$(PYTHONPATH) -Dpython.verbose=message
 
 POOL=`printf "DIR::%s" ~/.storm-pool`
