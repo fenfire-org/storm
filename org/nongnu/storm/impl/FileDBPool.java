@@ -36,7 +36,7 @@ import java.util.*;
  */
 public class FileDBPool extends AbstractLocalPool {
     static public boolean dbg = false;
-    static private void p(String s) { System.out.println("BerkeleyDBPool:: "+s); }
+    static private void p(String s) { System.out.println("FileDBPool:: "+s); }
 
 
 
