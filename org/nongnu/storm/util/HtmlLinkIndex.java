@@ -135,11 +135,16 @@ public class HtmlLinkIndex {
 				URL url = new URL(href);
 				URLConnection conn = url.openConnection();
 				InputStream in = conn.getInputStream();
-				XSLTransform stylesheet = new XSLTransform(in);
+				Builder builder = new Builder();
+				Document styledocument = builder.build(in, href);
+				XSLTransform stylesheet = new XSLTransform(styledocument);
 				Nodes n = stylesheet.transform(document);
 				if(n.size() != 1)
 				    throw new Error("???");
 				document = new Document((Element)n.get(0));
+			    } catch(ParsingException e) {
+				e.printStackTrace();
+				return Collections.EMPTY_SET;
 			    } catch(XSLException e) {
 				e.printStackTrace();
 				return Collections.EMPTY_SET;
