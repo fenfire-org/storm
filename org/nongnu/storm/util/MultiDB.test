@@ -31,7 +31,7 @@ DIR = './multidb-test-dir/'
 def setUp():
     global db
     print 'mkdir? ', java.io.File(DIR).mkdirs()
-    db = MultiDB(java.io.File(DIR))
+    db = MultiDB.Impl(java.io.File(DIR))
     db.clear()
 
 def test_1_Create():
@@ -53,7 +53,7 @@ def test_2_PutGet():
         assert not iter.hasNext()
 
     # reread with new instance
-    db = MultiDB(java.io.File(DIR))
+    db = MultiDB.Impl(java.io.File(DIR))
     for i in range(100):
         l = db.get(str(i)) 
         assert l != None
