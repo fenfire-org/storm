@@ -31,7 +31,7 @@ DIR = './db-test-dir/'
 def setUp():
     global db
     print 'mkdir? ', java.io.File(DIR).mkdirs()
-    db = DB(java.io.File(DIR))
+    db = DB.Impl(java.io.File(DIR))
     db.clear()
 
 def testCreate():
@@ -56,7 +56,7 @@ def testPutGet():
         assert ins.read() == -1
 
     # reread with new instance
-    db = DB(java.io.File(DIR))
+    db = DB.impl(java.io.File(DIR))
     for i in range(100):
         ins = db.get(str(i))
         assert ins.read() == i

@@ -47,9 +47,9 @@ public class FileDBPool extends AbstractLocalPool {
     //protected Map dbs = new HashMap();
 
     /** The Berkeley hash DB  */
-    protected DBinf blocks_db; 
+    protected DB blocks_db; 
     protected MultiDB indices_db; 
-    protected DBinf indexed_blocks_db; 
+    protected DB indexed_blocks_db; 
     //protected Environment dbEnvironment;
     public FileDBPool(File dir, Set indexTypes) throws Exception {
 	super(indexTypes);
@@ -67,9 +67,9 @@ public class FileDBPool extends AbstractLocalPool {
 	indices.mkdirs();
 	indexed_b.mkdirs();
 
-	blocks_db = new DB(blocks, 128);
+	blocks_db = new DB.Impl(blocks, 128);
 	indices_db = new MultiDB.Impl(indices);
-	indexed_blocks_db = new DB(indexed_b, 128);
+	indexed_blocks_db = new DB.Impl(indexed_b, 128);
     }
 
     
@@ -170,7 +170,7 @@ public class FileDBPool extends AbstractLocalPool {
      * **********************************************************
      */
 
-    private void put(DBinf db, String key, String data)
+    private void put(DB db, String key, String data)
 	throws IOException {
 	db.put(key, new ByteArrayInputStream(data.getBytes("UTF-8")));
     }
