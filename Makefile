@@ -6,7 +6,7 @@ TESTMODULES=org/nongnu/storm/modules/
 DEPENDS = ../depends
 RAWSRC = `find org/ -name "*.java"` `find com/ -name "*.java"`
 CLASSDIR=CLASSES/
-CLASSPATH=$(CLASSDIR):$(DEPENDS)/cryptix-jce-provider.jar:$(DEPENDS)/jython.jar:$(DEPENDS)/gisp.jar:$(DEPENDS)/dom4j.jar:$(DEPENDS)/log4j.jar:$(DEPENDS)/bamboo.jar:$(DEPENDS)/oncrpc.jar:$(DEPENDS)/jtidy.jar:$(DEPENDS)/xom.jar:$(DEPENDS)/je.jar:$(shell echo $$CLASSPATH)
+CLASSPATH=$(CLASSDIR):$(DEPENDS)/cryptix-jce-provider.jar:$(DEPENDS)/jython.jar:$(DEPENDS)/gisp.jar:$(DEPENDS)/dom4j.jar:$(DEPENDS)/log4j.jar:$(DEPENDS)/bamboo.jar:$(DEPENDS)/oncrpc.jar:$(DEPENDS)/jtidy.jar:$(DEPENDS)/xom-1.0b7.jar:$(DEPENDS)/je.jar:$(shell echo $$CLASSPATH)
 PYTHONPATH=-Dpython.path=.:$(DEPENDS)/jythonlib.jar:$(DEPENDS)/pythonlib.jar:../navidoc/:$(DEPENDS)/docutils.jar
 export CLASSPATH
 JAVAC=javac
