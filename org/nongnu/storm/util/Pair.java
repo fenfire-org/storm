@@ -47,8 +47,17 @@ public class Pair {
     public boolean equals(Object o) {
 	if(!(o instanceof Pair)) return false;
 	Pair p = (Pair)o;
-	if(first == null || !first.equals(p.first) ||
-	   second == null || !second.equals(p.second)) return false;
+	if((first == null && p.first != null) || 
+	   (first != null && !first.equals(p.first)) ||
+	   (second == null && p.second != null)|| 
+	   (second != null && !second.equals(p.second))) 
+	    return false;
 	return true;
+    }
+
+    public String toString() {
+	return "["+super.toString()+": "+
+		first + ", " +
+		second + "]";
     }
 }
