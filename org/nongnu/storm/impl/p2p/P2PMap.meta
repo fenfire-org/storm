@@ -1,0 +1,110 @@
+# 
+# Copyright (c) 2003, Benja Fallenstein
+# 
+# This file is part of Storm.
+# 
+# Storm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Storm is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Storm; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+"""
+Needs attribute: map1, map2 -- two instances of
+the P2PMap to be tested. The two need to be connected,
+so that a change in one shows up in the other.
+
+The afterPut() hook function can be overridden
+to wait a few seconds after put()ting. This is required
+by the GISP implementation to make sure the item
+has really been entered into the database.
+By default, this function does nothing.
+
+Same with beforePut().
+"""
+
+import org, java
+
+from jarray import array
+
+def beforePut(): pass
+def afterPut(): pass
+
+def set(collection):
+    set = java.util.HashSet()
+    if hasattr(collection, '__getitem__'):
+        for el in collection:
+            set.add(java.lang.String(el))
+    else:
+        i = collection.iterator()
+        while i.hasNext():
+            set.add(java.lang.String(i.next()))
+    return set
+
+def asyncset(collector):
+    set = java.util.HashSet()
+    i = collector.blockingIterator()
+    while i.hasNext():
+        set.add(java.lang.String(i.next()))
+    return set
+
+def testSimple():
+    time = 30*60*1000
+
+    k1 = 'bl<\'"&a'
+    k2 = 'bl<\'"&a'
+    k3 = 'blu bb'
+    k4 = 'blu bb'
+    k5 = 'foo'
+
+    beforePut()
+
+    map1.put(k1, 'foo', time)
+    map1.put(k2, 'ba r', time)
+    map1.put(k3, 'ba z', time)
+    map1.put(k4, 'wo<\'"mbat', time)
+    map1.put(k5, 'flabberghasted', time)
+
+    afterPut()
+
+    # First, request one set of responses through the asynchronous
+    # interface, there was a bug there at one point
+    s1 = asyncset(map2.get(k1))
+
+    q1, q2, q3, q4, q5 = [map2.get(k) for k in [k1, k2, k3, k4, k5]]
+    qx = map1.get(k5)
+
+    #print 'wait'
+    #print set(q1.block()), set(q2.block()), set(['foo', 'bar'])
+    #print 'ok'
+    assert s1 == set(q1.block()) == set(q2.block()) == set(['foo', 'ba r'])
+    assert set(q3.block()) == set(q4.block()) == set(['ba z', 'wo<\'"mbat'])
+    assert set(q5.block()) == set(qx.block()) == set(['flabberghasted'])
+
+
+
+    # The same again -- this time, we'll get cached responses
+    # from at least GispP2PMap
+    s1 = asyncset(map2.get(k1))
+
+    q1, q2, q3, q4, q5 = [map2.get(k) for k in [k1, k2, k3, k4, k5]]
+    qx = map1.get(k5)
+
+    assert s1 == set(q1.block()) == set(q2.block()) == set(['foo', 'ba r'])
+    assert set(q3.block()) == set(q4.block()) == set(['ba z', 'wo<\'"mbat'])
+    assert set(q5.block()) == set(qx.block()) == set(['flabberghasted'])
+
+
+
+    

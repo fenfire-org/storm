@@ -1,0 +1,63 @@
+#!/bin/bash
+# bamboo-ctrl - a script to control Storm seed and gateway daemon processes
+#
+# Requires: Bamboo (default location is ~/bamboo)
+# Author: Tuukka Hastrup <Tuukka@iki.fi>, 
+#         Benja Fallenstein <b.fallenstein@gmx.de>
+# License: GNU General Public License
+#
+# Usage: bamboo-ctrl ensure|check
+# Example: bamboo-ctrl check
+#
+# ensure is meant to be run periodically by cron, and it starts the daemons
+# if they are not already running. An example crontab is provided, and can be 
+# installed for the user with command "crontab crontab.example". The 
+# previous crontab is overwritten. The crontab assumes the PATH there contains
+# this script, which can be symlinked to ~/bin, for example. 
+#
+# A configuration file for Bamboo (default ~/.bamboo.cfg, 
+# example bamboo.cfg.example) contains setup information for the daemon.
+
+LOG=$HOME/.bamboo.log
+CONF=$HOME/.bamboo.cfg
+PIDFILE=$HOME/.bamboo.pid
+BAMBOO=$HOME/bamboo
+
+ACTION="$1" # ensure, check
+
+# check whether the udp port given as argument is accepting connections
+checkport() {
+    local PORT="$1"
+    netstat -u --numeric-ports -l |
+    while IFS=" :" read -r a b c d port rest; do
+        [ "$port" = "$PORT" ] && return 2
+    done
+    if [ "$?" = "2" ]; then # port found
+        return 0
+    fi
+    return 1
+}
+
+PORT="57090"
+
+if checkport $PORT; then # XXX check pid as well
+    if [ "$ACTION" = "check" ]; then 
+        echo "Already listening on port $PORT"
+    else
+        exit 0
+    fi
+elif [ "$ACTION" = "check" ]; then
+    echo "Not yet listening on port $PORT"
+fi
+
+if [ "$ACTION" = "ensure" ]; then
+    rm -rf /tmp/bamboo-cache
+    $BAMBOO/bin/run-java bamboo.lss.DustDevil $CONF >>"$LOG" 2>&1 &
+    echo $! >"$PIDFILE"
+elif [ "$ACTION" = "check" ]; then
+    echo rm -rf /tmp/bamboo-cache
+    echo ./bin/run-java bamboo.lss.DustDevil $CONF
+else
+    echo >&2 "Unknown action: $ACTION"
+    exit 10
+fi

@@ -1,0 +1,13 @@
+A pool containing an empty text/plain and an empty
+application/vnd.kde.kword block. These are used by
+the HTTP web interface as the original targets
+of new text and KWord document pointers.
+
+When new types of documents are added to the
+web interface, the corresponding blocks should be
+added to this pool.
+
+Usage: Simply make a copy of the bootstrap-pool
+directory, remove the CVS subdirectory,
+and use the result as the starting point
+for your pool.

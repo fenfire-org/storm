@@ -1,0 +1,8 @@
+# Delete the following line if you are not running a Bamboo node locally
+BambooNode: localhost:5000
+
+Seed: himalia.it.jyu.fi:57083
+Seed: io.it.jyu.fi:57083
+MapServePort: 5556
+
+Pool: .storm-pool

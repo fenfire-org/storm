@@ -1,0 +1,82 @@
+# 
+# Copyright (c) 2003, Hermanni Hyyti?l?
+# 
+# This file is part of Storm.
+# 
+# Gzz is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Gzz is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Gzz; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, org
+
+from org.nongnu.storm.http.client import HTTPConnection
+from org.nongnu.storm.http.client import HTTPRequest
+from org.nongnu.storm.http.client import HTTPResponse
+from org.nongnu.storm.impl import TransientPool
+from org.nongnu.storm.util import HTTPProxy
+
+host0 = "127.0.0.1"
+host1 = "fishy.it.jyu.fi"
+host2 = "io.it.jyu.fi"
+host3 = "kanetti1390.kanetti.com"
+
+port = 5790
+
+protocol1 = "HTTP/1.1"
+protocol2 = "HTTP/1.0"
+protocol3 = "HTTP/0.9"
+
+def testHTTPClient():
+
+    
+         # Create a empty pool (transient pool)
+	 empty = java.util.Collections.EMPTY_SET
+	 pool = TransientPool(empty)
+
+         # Create data form block
+         bos = pool.getBlockOutputStream("text/plain")
+         osw = java.io.OutputStreamWriter(bos)
+         osw.write("Hello, world!")
+         osw.close()
+         block = pool.get(bos.getBlockId())        
+         blockid = block.getId().toString()
+         
+         
+         # Start HTTP-proxy thread
+         proxy = HTTPProxy(pool, port)
+    	 serverthread = java.lang.Thread(proxy, "HTTP_PROXY")
+         serverthread.start() 
+	 print "HTTP proxy thread started..."
+	 
+         
+         # Perform GET requests using the ID of created block         
+         print "Perform GET request(s)..."         
+         getlist = ["///rewrite/" + blockid, blockid, "foo" + blockid, "rewrite/" + blockid]
+         
+         for reqs in getlist:            
+             #Create HTTP connection to localhost
+             httpconn = org.nongnu.storm.http.client.HTTPConnection(host0, port)
+	     req = httpconn.newRequest("GET", reqs, protocol2, java.lang.Boolean.FALSE)         
+             resp = httpconn.send(req)	 
+             print resp.status, resp.reason
+             # Conditions here...
+             # assert resp.status == 200
+                  
+	 httpconn.close	 
+          
+	 if  serverthread.isAlive() == 1:             
+             serverthread.interrupt()
+             print "HTTP proxy thread stopped..."

@@ -1,0 +1,44 @@
+# Copyright (c) 2003, Benja Fallenstein
+# 
+# Permission is hereby granted, free of charge, 
+# to any person obtaining a copy of this software 
+# and associated documentation files (the "Software"), 
+# to deal in the Software without restriction, 
+# including without limitation the rights to use, 
+# copy, modify, merge, publish, distribute, sublicense, 
+# and/or sell copies of the Software, and to permit persons 
+# to whom the Software is furnished to do so, 
+# subject to the following conditions:
+# 
+# The above copyright notice and this permission notice 
+# shall be included in all copies or substantial portions 
+# of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY 
+# OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR 
+# A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT 
+# SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE 
+# FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
+# OR OTHER DEALINGS IN THE SOFTWARE.
+
+import java, org
+
+ip = java.net.InetAddress.getByName('127.0.0.1')
+map1 = org.nongnu.storm.modules.gispmap.GispP2PMap(ip, 3701, None, 0)
+map2 = org.nongnu.storm.modules.gispmap.GispP2PMap(ip, 3702, 
+                                                   ['127.0.0.1:3701'], 0)
+
+execfile('org/nongnu/storm/impl/p2p/P2PMap.meta')
+
+testSimple.__doc__ = "\n\ncost: 10\n"
+
+def beforePut():
+    print 'waiting for GISP to initialize (20 sec)'
+    java.lang.Thread.sleep(20000)
+
+def afterPut():
+    print 'waiting for GISP to insert the item... (20 sec)'
+    java.lang.Thread.sleep(20000)

@@ -1,0 +1,298 @@
+# -*-Python-*-
+# 
+# Copyright (c) 2003, Anton Feldmann and Benja Fallenstein
+# 
+# This file is part of Gzz.
+# 
+# Gzz is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Gzz is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Gzz; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+# Tests for StormPool implementations
+
+# Requires attribute:
+# pool -- the pool to be tested
+#         (an empty instance must be created
+#         by setUp())
+
+from org.nongnu.storm import BlockId
+from org.nongnu.storm.util import CopyUtil
+
+from java.io import *
+from java.util import *
+
+def testNewBlock():
+    """
+    Test creating and retrieving a new block.
+    Create a new block in the pool, request it from the pool by ID,
+    check its body (contents) and its Content-Type.
+    """
+
+    bos = pool.getBlockOutputStream("text/plain")
+
+    assert bos.getContentType() == 'text/plain'
+
+    osw = OutputStreamWriter(bos)
+    osw.write("Hallo, Welt!")
+    osw.close()
+
+    b = pool.get(bos.getBlockId())
+
+    # We do *not* perform the test on the following line
+    # because it is entirely allowable for a pool to
+    # proxy block creation requests to another pool,
+    # and also to retrieve blocks from a different pool
+    # than blocks are written to.
+    #assert bos.getBlock().getPool() == b.getPool() == pool
+
+    b.getId().check(CopyUtil.readBytes(b.getInputStream()))
+
+    s = ""
+    stream = b.getInputStream()
+    while 1:
+        x = stream.read()
+        if x < 0: break
+        s += chr(x)
+
+    assert s == "Hallo, Welt!"
+
+    assert b.getId().getContentType() == "text/plain"
+
+def testCloseBlockOutputStream():
+    """getBlock() on a non-closed BOS must throw an error"""
+    bos = pool.getBlockOutputStream("text/plain")
+
+    try: bos.getBlock()
+    except: pass
+    else: assert 0
+
+    try: bos.getBlockId()
+    except: pass
+    else: assert 0
+
+    bos.close()
+
+    bos.getBlock()
+    bos.getBlockId()
+
+def testBlockTmpFile():
+    """
+    Test that creating a blocktmpfile out of a block
+    in the pool works.
+    """
+    bos = pool.getBlockOutputStream("text/plain")
+    osw = OutputStreamWriter(bos)
+    osw.write("Hallo, Welt!")
+    osw.close()
+    blockid = bos.getBlockId()
+    block = pool.get(blockid)
+    f = org.nongnu.storm.util.BlockTmpFile.get(block)
+    inp = java.io.FileReader(f.getFile())
+    buf = java.lang.StringBuffer()
+    str = "Hallo, Welt!"
+    ind = 0
+    while 1:
+	c = inp.read()
+	if c < 0: break
+	# print "R: ", chr(c), str[ind]
+	assert chr(c) == str[ind]
+	ind += 1
+    assert ind == len(str)
+    inp.close()
+    f.close()
+
+
+def testAddTwice():
+    """
+    Test adding the same block to a pool twice.
+    """
+
+    bos = pool.getBlockOutputStream("text/plain")
+    bos.close()
+
+    pool.add(bos.getBlock())
+
+
+def testCloseTwice():
+    """
+    Test closing the same BlockOutputStream twice.
+    """
+
+    bos = pool.getBlockOutputStream("text/plain")
+    bos.write(0x01)
+    bos.close()
+    bos.close()
+    
+    block = bos.getBlock()
+    block.getId().check(CopyUtil.readBytes(block.getInputStream()));
+    stream = block.getInputStream();
+    assert stream.read() == 0x01
+    assert stream.read() < 0
+    stream.close()
+
+
+def testIdsNotNull():
+    """
+    Assert that getIds() does not return null.
+    This is required of all pools. (They can return
+    the canonical empty set from java.util.Collections
+    at no extra cost, after all...)
+    """
+
+    print pool
+    setUp()
+    print pool
+    
+    assert not (pool.getIds() is None)
+    if not pool.getIds().isEmpty():
+        import java
+        print; print
+        i = pool.getIds().iterator()
+        while i.hasNext():
+            id = i.next()
+            print id
+
+            str = pool.get(id).getInputStream()
+            r = java.io.BufferedReader(java.io.InputStreamReader(str))
+            print r.readLine()
+
+        java.lang.System.exit(1)
+    assert pool.getIds().isEmpty()
+
+
+def testAddRemoveId():
+    """
+    Create a new block, check that the ID appears
+    in the pool's getIds() set. Then, delete the block
+    and check that the block disappears.
+
+    NOTE: getIds() is NOT REQUIRED to return all ids in the pool;
+    this is implementation-dependent. Obviously, this method
+    should only be called for pools that guarantee the id to be
+    in getIds().
+    """
+
+    oldIds = HashSet(pool.getIds())
+
+    bos = pool.getBlockOutputStream("text/plain")
+    bos.close()
+        
+    newIds = HashSet(pool.getIds())
+
+    pool.get(bos.getBlockId())
+
+    assert oldIds != newIds
+    assert newIds.contains(bos.getBlockId())
+    
+    pool.delete(bos.getBlock())
+
+    assert not pool.getIds().contains(bos.getBlockId())
+
+
+def testDelete():
+    """
+    Remove a block from the pool.
+    """
+
+    bos = pool.getBlockOutputStream("text/plain")
+    bos.close()
+    
+    pool.get(bos.getBlockId())
+    
+    pool.delete(bos.getBlock())
+    
+    try: pool.get(bos.getBlockId())
+    except FileNotFoundException: pass
+    else: assert 0
+    
+def testFoo():
+    bos = pool.getBlockOutputStream("text/plain")
+    osw = OutputStreamWriter(bos)
+    osw.write("Hallo, Welt!")
+    osw.close()
+    bos.close()
+    
+    pool.get(bos.getBlockId())
+
+def testBlockId():
+    """
+    Add a block and check its id.
+    """
+
+    body = 'A' * 1025
+    id = BlockId("vnd-storm-hash:text/plain,"
+                 "UUHHSQPHQXN5X6EMYK6CD7IJ7BHZTE77."
+                 "PZMRYHGY6LTBEH63ZWAHDORHSYTLO4LEFUIKHWY")
+
+    bos = pool.getBlockOutputStream("text/plain")
+    bos.write(body)
+    bos.close()
+
+    id1 = bos.getBlockId()
+    id2 = bos.getBlock().getId()
+
+    assert id == id1 == id2
+
+    bytes = CopyUtil.readBytes(bos.getBlock().getInputStream())
+    id.check(bytes)
+    id1.check(bytes)
+    id2.check(bytes)
+
+
+def testGetNonexistent():
+    """
+    Test that trying to get a nonexistent block
+    gives a FileNotFoundException.
+    """
+
+    badid = BlockId("vnd-storm-hash:application/sometype,"
+                    "1E88CEE70319F016EEF00B315C0B930C."
+                    "ILOPTKERWIPAPSZEPFN953DB7776EAAWGBAGKKE")
+
+    try: pool.get(badid)
+    except FileNotFoundException: pass
+    else: assert 0
+
+
+def testAddBlock():
+    """
+    Test adding a block from a different pool.
+    """
+
+    p2 = org.nongnu.storm.impl.TransientPool(java.util.HashSet())
+
+    bos = p2.getBlockOutputStream("text/plain")
+    bos.write("Hi")
+    bos.close();
+
+    block = bos.getBlock()
+    id = block.getId()
+
+    pool.add(block)
+    b2 = pool.get(id)
+
+    assert b2.getId() == id
+
+    stream = b2.getInputStream()
+    assert org.nongnu.storm.util.CopyUtil.readString(stream) == "Hi"
+
+
+def testAddBadBlock():
+    """
+    Test adding a spoofed block with a wrong id (XXX missing!)
+    Must throw a WrongIdException.
+    """
+    pass

@@ -1,0 +1,30 @@
+Tasks for storm
+
+sometime for proxy:
+  - URI decoding and encoding
+  - HTML encoding
+  - web form for requesting a block by URN
+
+0.1alpha1: First separate release
+    anybody:
+	- port tests from gzz.
+
+0.2: Development
+    benja:
+        - finish Storm redesign
+	  - diffing
+	  - move out of lava/
+	  - PEGs
+	  + multiplexing Storm pool?
+	  + demo implementation on top of GISP
+	  + asynchronous network lookups
+	    + write PEG about existing interfaces
+	- TOTAL UML documentation for all classes involved in
+	  the save/load stuff, collaboration diagrams etc.
+	  The path from structure to bytes and bytes to structure
+	  needs to be ABSOLUTELY clear and transparent.
+	- fix urn-5 application, which says "pseudo-random number (160 or more bytes)"
+	  and 'SHA-1 assumes uniqueness of 160 byte identifiers"
+	  should be bits!! Need to send version 1.1?
+
+

@@ -1,0 +1,145 @@
+# -*-Python-*-
+# 
+# Copyright (c) 2003, Benja Fallenstein
+# 
+# This file is part of Storm.
+# 
+# Storm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Storm is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Storm; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, org
+
+from org.nongnu.storm.impl import TransientPool
+from org.nongnu.storm.references import PointerSigner, PointerIndex, Pointers
+from org.nongnu.storm.util import HtmlLinkIndex, Base64
+
+def set(list):
+    set = java.util.HashSet()
+    for el in list: set.add(el)
+    return set
+
+def testContentTypeIndex():
+    p = TransientPool(set([HtmlLinkIndex.type, PointerIndex.type]))
+    org.nongnu.storm.util.StormURLStreamHandlerFactory.install(p);
+    i = p.getIndex(HtmlLinkIndex.uri)
+
+    os = p.getBlockOutputStream("text/plain")
+    os.write(ownerReference)
+    os.close()
+
+    signer = PointerSigner(p, java.io.ByteArrayInputStream(keyinfo))
+
+
+    os = p.getBlockOutputStream("text/plain")
+    os.close()
+    id1 = os.getBlockId()
+
+    assert i.getLinksTo(id1.getURI()).block() == set([])
+
+    # badly formed HTML document with link
+    os = p.getBlockOutputStream("text/html")
+    os.write("<html xml:lang=en xmlns:foo='http://example.net/bar'><A hRef="+id1.getURI()+">blah</A></EXAMPLE>")
+    os.close()
+    id2 = os.getBlockId()
+    ptrA = signer.newPointer()
+    signer.initialize(ptrA, Pointers.hasInstanceRecord, id2.getURI())    
+
+    # XHTML document
+    os = p.getBlockOutputStream("application/xml")
+    os.write('''
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>A single link</title>
+    </head>
+    <body>
+        <a href="%s">link</a>
+    </body>
+    </html>
+    ''' % id1.getURI())
+    os.close()
+    id3 = os.getBlockId()
+    ptrB = signer.newPointer()
+    signer.initialize(ptrB, Pointers.hasInstanceRecord, id3.getURI())
+
+    # Non-XHTML XSL document that looks like XHTML
+    os = p.getBlockOutputStream("application/xml")
+    os.write('''
+    <html xmlns="http://example.org/namespace">
+    <head>
+        <title>A single link</title>
+    </head>
+    <body>
+        <a href="%s">link</a>
+    </body>
+    </html>
+    ''' % id1.getURI())
+    os.close()
+    id4 = os.getBlockId()
+    ptrC = signer.newPointer()
+    signer.initialize(ptrC, Pointers.hasInstanceRecord, id4.getURI())
+
+    # XSLT stylesheet
+    os = p.getBlockOutputStream("application/xslt+xml")
+    os.write('''
+    <html xmlns="http://www.w3.org/1999/xhtml"
+          xmlns:xslt="http://www.w3.org/1999/XSL/Transform"
+          xslt:version="1.0">
+    <head>
+        <title>A single link</title>
+    </head>
+    <body>
+        <a href="%s">link</a>
+    </body>
+    </html>
+    ''' % id1.getURI())
+    os.close()
+    id_xslt = os.getBlockId()
+    ptrD = signer.newPointer()
+    signer.initialize(ptrD, Pointers.hasInstanceRecord, id_xslt.getURI())
+
+    # XSLT-transformed document
+    os = p.getBlockOutputStream("application/xml")
+    os.write('''
+    <?xml-stylesheet href="%s" type="application/xslt+xml"?>
+    <foo xmlns="http://example.com/namespace">
+        <bar/>
+        <baz/>
+        <bengbie/>
+    </foo>
+    ''' % id_xslt.getURI())
+    os.close()
+    id5 = os.getBlockId()
+    ptrE = signer.newPointer()
+    signer.initialize(ptrE, Pointers.hasInstanceRecord, id5.getURI())
+
+    links = i.getLinksTo(id1.getURI()).block()
+
+    pointers = java.util.HashSet()
+    iterator = links.iterator()
+    while iterator.hasNext(): pointers.add(iterator.next().pointer)
+
+    assert pointers == set([ptrA, ptrB, ptrE])
+
+
+
+
+keyinfo = Base64.decode(java.lang.String('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').toCharArray())
+
+ownerReference = '''_:this <http://purl.oclc.org/NET/storm/vocab/pointers/identificationInfo> <vnd-storm-hash:text/plain,3i42h3s6nnfq2msvx7xzkyayscx5qbyj.lwpnacqdbzryxw3vhjvcj64qbznghohhhzwclnq>.
+_:this <http://purl.oclc.org/NET/storm/vocab/pointers/initialPublicKeySpec> "MIIBtzCCASwGByqGSM44BAEwggEfAoGBAOe2J4Sux+Ro1wGeGtQuzdURFYDD5fNWCKV6wMvUXGRYdzY2W1wPnbsGyY8ZT370qz0KzIhA2fC8Oitlx5lDizMt6tLcoIZuvtZqxboxSK+AunjHrQTPJ2EvTn6A2uFCbhS05QehFL10zO2Y36OVZC64L2Px/G30p3h2EGqig3fpAhUA4NzkcG0W3CDywKy6EagsFloDQ78CgYEAoWfwEMysRHNdZxZyouixQYh4oYAgbICJjZrhyhaZHNm5Ka4vuZ2l0j4vkLkN9JxAPofHssCArwJgk7EZ3VpMGitUThhq5R6TUApSSFNw47+/KABCd90iqOvggnUdbrd/K3zJR7E5V4jbAUJ1//PXNXnQJlnLXkI2gyjImjxNlIoDgYQAAoGAbeOO00VimGX/cL9iAkR1C1iAfb6l5ewpuDm5Ie8XqNMnDJ2Yamh5+IHrjqKsRqHRL7rDv+iDRq0DpMkRflXCR5OoIpL1tq3zT6TjiSqo0uyfRLRoh9umlYVYn0WISJENZ7SsV+poW0zF2Xjx1jWqjFxq3z2wlg1c4DwRm2ak6FU="^^<http://www.w3.org/2001/XMLSchema#base64Binary>.
+_:this <http://purl.oclc.org/NET/storm/vocab/ref-uri/resolutionMethod> <http://purl.oclc.org/NET/storm/vocab/ref-uri/ReferenceGraph>.
+'''

@@ -1,0 +1,93 @@
+# 
+# Copyright (c) 2003, Benja Fallenstein
+# 
+# This file is part of Storm.
+# 
+# Storm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Storm is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Storm; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+from __future__ import nested_scopes
+
+import org, java
+
+execfile("org/nongnu/storm/IndexedPool.meta")
+
+superSetUp = setUp
+
+def setUp():
+    global directory
+    
+    directory = org.nongnu.storm.util.TempFileUtil.tmpFile(java.io.File("."))
+    directory.mkdir()
+
+    superSetUp()
+
+
+def Pool(indexTypes):
+    set = java.util.HashSet()
+    for el in indexTypes: set.add(el)
+    return org.nongnu.storm.impl.DirPool(directory, set)
+
+def testInconsistent():
+    """
+    Try to bring a pool in an inconsistent state
+    by first using a DirPool that has an index,
+    then a DirPool that doesn't have it,
+    then one that has it, again.
+
+    If confusing the pool works, it will only
+    contain the indexing from the first pool,
+    not from the second pool. (The test fails then.)
+    """
+
+    typeURI = org.nongnu.storm.util.ContentTypeIndexType.contentTypeIndexTypeURI
+
+    p = Pool([org.nongnu.storm.util.ContentTypeIndexType()])
+    i = p.getIndex(typeURI)
+    os = p.getBlockOutputStream("text/plain")
+    os.close()
+    id1 = os.getBlockId()
+
+    assert i != None
+    assert i.getBlocks("text/plain") == set([id1])
+
+    p = Pool([])
+    os = p.getBlockOutputStream("text/plain")
+    os.close()
+    id2 = os.getBlockId()
+
+    try: p.getIndex(typeURI)
+    except java.util.NoSuchElementException: pass
+    else: assert 0
+
+    p = Pool([org.nongnu.storm.util.ContentTypeIndexType()])
+    i = p.getIndex(typeURI)
+
+    assert i != None
+    assert i.getBlocks("text/plain") == set([id1, id2])
+
+def testTypesFiles():
+    """Test that the types_ files are written to the correct dir"""
+    os = pool.getBlockOutputStream("text/plain")
+    os.close()
+    name = 'types_' + os.getBlockId().getBitprint()
+    assert File(directory, name).exists()
+    
+
+def tearDown():
+    org.nongnu.storm.util.TempFileUtil.deltree(directory)
+

@@ -1,0 +1,73 @@
+# -*-python-*-
+# 
+# Copyright (c) 2003, Hermanni Hyyti?l?
+#               2004, Matti J. Katila
+# 
+# This file is part of Storm.
+# 
+# Gzz is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Gzz is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Gzz; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, org
+
+from org.nongnu.storm.http.client import HTTPConnection
+from org.nongnu.storm.http.client import HTTPRequest
+from org.nongnu.storm.http.client import HTTPResponse
+from org.nongnu.storm.impl import TransientPool, AbstractFilterPool
+from org.nongnu.storm.util import HTTPProxy
+
+import org.nongnu.storm as storm
+import time
+
+host = "127.0.0.1"
+
+protocols = ["HTTP/1.1", 
+             "HTTP/1.0",     
+             "HTTP/0.9",
+             ]
+
+port = 28054
+proxypool = AbstractFilterPool.FilterPool(None)
+proxy = HTTPProxy(proxypool, port)
+proxy.acceptPut(1)
+serverthread = java.lang.Thread(proxy)
+serverthread.start()
+
+
+def Pool(indexTypes):
+    set = java.util.HashSet()
+    for el in indexTypes: set.add(el)
+
+    proxypool.setPool(TransientPool(set))
+    pool = org.nongnu.storm.impl.HTTPPool(host, port, set)
+    return pool
+
+def setUp():
+    global pool
+    pool = Pool([])
+    #pool = org.nongnu.storm.impl.HTTPPool(host, port)
+    #proxypool.clear()
+
+def setDown():
+    global serverthread
+    if serverthread.isAlive():
+        serverthread.interrupt()
+        print 'Interrupt now'
+    
+
+execfile("org/nongnu/storm/StormPool.meta")
+execfile("org/nongnu/storm/IndexedPool.meta")

@@ -1,0 +1,248 @@
+# 
+# Copyright (c) 2002, Benja Fallenstein
+# 
+# This file is part of Gzz.
+# 
+# Gzz is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Gzz is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Gzz; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, com, org
+from org.nongnu.storm import BlockId
+from jarray import array
+
+uri_1 = ("vnd-storm-hash:application/rdf+xml,QLFYWY2RI5WZCTEP6M"
+         "JKR5CAFGP7FQ5X.VEKXTRSJPTZJLY2IKG5FQ2TCXK26SECFPP4DX7I")
+lower_1 = uri_1.lower()
+
+uri_2 = ("vnd-storm-hash:application/octet-stream,"
+         "3I42H3S6NNFQ2MSVX7XZKYAYSCX5QBYJ."
+         "LWPNACQDBZRYXW3VHJVCJ64QBZNGHOHHHZWCLNQ")
+lower_2 = uri_2.lower()
+data_2 = ''
+
+uri_3 = ("vnd-storm-hash:text/plain,"
+         "UUHHSQPHQXN5X6EMYK6CD7IJ7BHZTE77."
+         "PZMRYHGY6LTBEH63ZWAHDORHSYTLO4LEFUIKHWY")
+lower_3 = uri_3.lower()
+data_3 = 1025 * 'A'
+
+contenttest = ("vnd-storm-hash:%s,"
+               "u7uu5zpmkoeykkwhxd4unlqycc36gvl7."
+               "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+
+def testConstructor():
+    id = BlockId(uri_1)
+    assert id.getURI() == lower_1
+    assert id.getContentType() == "application/rdf+xml"
+
+    id2 = BlockId(id.getContentType(),
+                  id.getSha1(), id.getTigerTree())
+
+    assert id2.getURI() == lower_1
+    assert id == id2
+    assert id.hashCode() == id2.hashCode()
+
+    id3 = BlockId(uri_3)
+    assert id3.getURI() == lower_3
+    assert id3.getContentType() == "text/plain"
+    assert id != id3
+    assert id.hashCode() != id3.hashCode()
+
+def testNullId():
+    """Null id must throw exception"""
+    try: BlockId(None)
+    except java.lang.NullPointerException: pass
+    else: assert 0
+
+def testUnparsable():
+    """Unparsable ids must throw exceptions"""
+
+    try: BlockId("vnd-storm-hash:")
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+    try: BlockId("")
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+def testMalformed():
+    """Malformed ids must throw exceptions"""
+
+    try: BlockId("vnd-storm-hash:,.")
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+# XXX test other wrong lengths too
+
+def testContentType():
+    """Malformed content types must throw exceptions"""
+
+    for ct in ['text/html', 
+               'a/a', 
+               'x/x']:
+        BlockId(contenttest % ct)
+
+    for ct in ['/html', 
+               'text/', 
+               '/',
+               'text/html/myextension',
+               'mytype']:
+        try: BlockId(contenttest % ct)
+        except java.lang.IllegalArgumentException: pass
+        else: assert 0
+
+
+def testSpaces():
+    """Spaces in content types must throw exceptions"""
+
+    BlockId(contenttest % 'text/plain;charset=UTF-8')
+
+    try: BlockId(contenttest % 'text/plain; charset=UTF-8')
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+    sha1 = com.bitzi.util.Base32.decode(
+        "u7uu5zpmkoeykkwhxd4unlqycc36gvl7")
+    tiger = com.bitzi.util.Base32.decode(
+        "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+    BlockId("text/plain;charset=UTF-8", sha1, tiger)
+
+    try: BlockId("text/plain; charset=UTF-8", sha1, tiger)
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+
+def testXType():
+    """X- content types must throw exceptions"""
+
+    BlockId("vnd-storm-hash:text/plain,"
+            "u7uu5zpmkoeykkwhxd4unlqycc36gvl7."
+            "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+
+    try: BlockId("vnd-storm-hash:text/x-java,"
+                 "u7uu5zpmkoeykkwhxd4unlqycc36gvl7."
+                 "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+    try: BlockId("vnd-storm-hash:text/x.java,"
+                 "u7uu5zpmkoeykkwhxd4unlqycc36gvl7."
+                 "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+    sha1 = com.bitzi.util.Base32.decode(
+        "u7uu5zpmkoeykkwhxd4unlqycc36gvl7")
+    tiger = com.bitzi.util.Base32.decode(
+        "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+    BlockId("text/plain", sha1, tiger)
+
+    try: BlockId("text/x-java", sha1, tiger)
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+    try: BlockId("text/x.java", sha1, tiger)
+    except java.lang.IllegalArgumentException: pass
+    else: assert 0
+
+def testNoContentType():
+    """Test that content type can be empty"""
+
+    BlockId("vnd-storm-hash:,"
+            "UUHHSQPHQXN5X6EMYK6CD7IJ7BHZTE77."
+            "PZMRYHGY6LTBEH63ZWAHDORHSYTLO4LEFUIKHWY")
+
+    sha1 = com.bitzi.util.Base32.decode(
+        "u7uu5zpmkoeykkwhxd4unlqycc36gvl7")
+    tiger = com.bitzi.util.Base32.decode(
+        "jtlcbiy2r6gfsznbgj42yzqbqk4ti373bqs5qyy")
+    BlockId("", sha1, tiger)
+
+
+def testGetIdForData():
+    id_1 = BlockId(uri_1)
+    id_2 = BlockId(uri_2)
+    id_3 = BlockId(uri_3)
+    get = BlockId.getIdForData
+
+    assert id_2 == get('application/Octet-Stream', data_2) != id_3
+    assert id_3 == get('text/plain', data_3) != id_2
+
+def testGetBitprint():
+    id_1 = BlockId(uri_1)
+    assert id_1.getBitprint() == (
+        "QLFYWY2RI5WZCTEP6MJKR5CAFGP7FQ5X."
+        "VEKXTRSJPTZJLY2IKG5FQ2TCXK26SECFPP4DX7I").lower()
+
+
+def check(id, data):
+    try: id.check(data)
+    except BlockId.WrongIdException: return 0
+    else: return 1
+
+def check2(id, data):
+    s = java.io.ByteArrayInputStream(data)
+    s2 = id.getCheckedInputStream(s)
+    while s2.read() >= 0: pass
+
+    try: s2.close()
+    except BlockId.WrongIdException: return 0
+    else: return 1
+
+def check3(id, data):
+    s = java.io.ByteArrayInputStream(data)
+    s2 = id.getCheckedInputStream(s)
+
+    try: s2.close()
+    except BlockId.WrongIdException: return 0
+    else: return 1
+
+
+def testCheck():
+    id_1 = BlockId(uri_1)
+    id_2 = BlockId(uri_2)
+    id_3 = BlockId(uri_3)
+
+    assert check(id_2, data_2)
+    assert (not check(id_1, data_2)) and (not check(id_3, data_2))
+    
+    assert check(id_3, data_3)
+    assert (not check(id_1, data_3)) and (not check(id_2, data_3))
+
+    assert check2(id_2, data_2)
+    assert (not check2(id_1, data_2)) and (not check2(id_3, data_2))
+    
+    assert check2(id_3, data_3)
+    assert (not check2(id_1, data_3)) and (not check2(id_2, data_3))
+
+    assert check3(id_2, data_2)
+    assert (not check3(id_1, data_2)) and (not check3(id_3, data_2))
+    
+    assert check3(id_3, data_3)
+    assert (not check3(id_1, data_3)) and (not check3(id_2, data_3))
+
+
+def testCheckNullBytes():
+    pool = org.nongnu.storm.impl.TransientPool(java.util.HashSet())
+    s = pool.getBlockOutputStream("application/octet-stream")
+    s.write(0); s.write(0)
+    s.close()
+
+    id = s.getBlockId()
+
+    b = java.io.ByteArrayInputStream(array([0,0], 'b'))
+    c = id.getCheckedInputStream(b)
+    c.close();

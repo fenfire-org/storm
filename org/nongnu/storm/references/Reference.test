@@ -1,0 +1,47 @@
+# -*-Python-*-
+# 
+# Copyright (c) 2002, Benja Fallenstein
+# 
+# This file is part of Gzz.
+# 
+# Gzz is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Gzz is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Gzz; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, com, org
+from org.nongnu.storm import *
+from org.nongnu.storm.impl import TransientPool
+from org.nongnu.storm.references import *
+from org.nongnu.storm.util import *
+
+nt1out = '''\
+_:bar <http://example.org/name> "Hallo Welt"@de.
+_:bar <http://example.org/name> "Hello World".
+_:foo <http://example.org/foo/bar> _:bar.
+'''
+
+def testSimple():
+    pool = TransientPool(java.util.Collections.singleton(PointerIndex.type))
+
+    m = Graph.Maker()
+    m.add("_:foo", "http://example.org/foo/bar", "_:bar")
+    m.addPlain("_:bar", "http://example.org/name", "Hello World")
+    m.addPlain("_:bar", "http://example.org/name", "Hallo Welt", "de")
+    ref = Reference.create(m, pool)
+
+    content = CopyUtil.readString(pool.get(ref.getId().getGraphId()).getInputStream())
+    #print content
+    assert content == nt1out

@@ -1,0 +1,9 @@
+[Protocol]
+exec=kio_kmd
+protocol=urn
+input=none
+output=stream
+reading=true
+writing=true
+defaultMimetype=text/plain
+Description=A kioslave for Storm

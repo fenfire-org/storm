@@ -1,0 +1,119 @@
+#!/bin/bash
+# storm - a script to control Storm seed and gateway daemon processes
+#
+# Requires: Storm (default location is .. from the location of this script);
+#           'chase' for chasing symlinks (available as a Debian package)
+# Author: Tuukka Hastrup <Tuukka@iki.fi>
+# License: GNU General Public License
+#
+# Usage: storm ensure|check seed|gateway
+# Example: storm check gateway
+# {{seed doesn't work currently}}
+#
+# ensure is meant to be run periodically by cron, and it starts the daemons
+# if they are not already running. An example crontab is provided, and can be 
+# installed for the user with command "crontab crontab.example". The 
+# previous crontab is overwritten. The crontab assumes the PATH there contains
+# this script, which can be symlinked to ~/bin, for example. 
+#
+# A configuration file (default ~/.storm.conf, example storm.conf.example) 
+# contains setup information for the daemons as "Key: value" lines. 
+# The keys include:
+# Pool: directory for the storm pool the gateway should publish
+# GatewayPort: TCP port the HTTP gateway should use for public access
+# BambooNode: address of the Bamboo node to use
+
+
+
+
+# OLD keys -- don't work any more--
+# Seed: hostname for a Storm peer (can be included multiple times)
+# Pool: directory for the storm pool the gateway should publish
+# SeedGispPort: UDP port the seed should use for GISP
+# GatewayGispPort: UDP port the gateway should use for GISP
+# MapServePort: TCP port the seed should use to publish the P2P map
+# GatewayPort: TCP port the gateway should use for public access
+
+LOG=$HOME/.storm.log
+CONF=$HOME/.storm.conf
+PIDFILE=$HOME/.storm.pid
+STORM=.. # relative paths are from script location
+
+ACTION="$1" # ensure, check
+TYPE="$2" # seed, gateway
+
+getConf() {
+    FIELD=$1
+    <"$CONF" sed -e "/^$FIELD: / ! d ; s/^$FIELD:  *//"
+}
+
+#SEEDS=$(getConf Seed)
+#SERVE=$(getConf MapServePort)
+GW=$(getConf GatewayPort)
+NODE=$(getConf BambooNode)
+#GWPORT=$(getConf GatewayGispPort)
+#SEEDPORT=$(getConf SeedGispPort)
+POOL=$(getConf Pool)
+[ -z "$POOL" ] && POOL="$HOME/.storm-pool"
+case "$POOL" in
+    /*) 
+        ;;
+    *) 
+        POOL="$HOME/$POOL"
+        ;;
+esac
+[ ! -e "$POOL" ] && POOL="" # XXX warning?
+
+#[ -z "$GW" ] && GW=5555
+#[ -z "$GWPORT" ] && GWPORT=57084
+#[ -z "$SEEDPORT" ] && SEEDPORT=57083
+[ -z "$NODE" ] && NODE="himalia.it.jyu.fi:5556"
+
+cd $(dirname $(chase "$0"))
+cd $STORM
+
+if [ "$TYPE" = "gateway" ]; then
+    PORT="$GW"
+
+    if [ -z "$GW" ]; then
+        GWOPT=""
+    else
+        GWOPT="-gw $GW -global"
+    fi
+
+    [ -n "$POOL" ] && POOLOPT="-pub $POOL"
+    TARGET="bamboo-peer"
+    ARGS="-node $NODE $GWOPT $POOLOPT"
+#elif [ "$TYPE" = "seed" ]; then
+#    GW=""
+#    PORT="$SEEDPORT"
+#
+#    [ -n "$SERVE" ] && SERVEOPT="-serve $SERVE"
+#    TARGET="gisp"
+#    ARGS="-port $PORT $SERVEOPT $SEEDS"
+else
+    echo >&2 "Unknown type: $TYPE"
+    exit 10
+fi
+
+if ps -p `cat $PIDFILE-$TYPE` > /dev/null; then # XXX check that we're listening on the gateway port as well
+    if [ "$ACTION" = "check" ]; then 
+	echo "Process is already running"
+        #echo "Already listening on port $PORT"
+    else
+        exit 0
+    fi
+elif [ "$ACTION" = "check" ]; then
+    echo "Process is not running yet"
+    #echo "Not yet listening on port $PORT"
+fi
+
+if [ "$ACTION" = "ensure" ]; then
+    make "$TARGET" ARGS="$(echo $ARGS)" >>"$LOG-$TYPE" 2>&1 &
+    echo $! >"$PIDFILE-$TYPE"
+elif [ "$ACTION" = "check" ]; then
+    make -n "$TARGET" ARGS="$(echo $ARGS)" 
+else
+    echo >&2 "Unknown action: $ACTION"
+    exit 10
+fi

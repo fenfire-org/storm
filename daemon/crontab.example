@@ -1,0 +1,13 @@
+SHELL=/bin/bash
+PATH=~/bin:/usr/local/bin:/usr/bin:/bin # default is /usr/bin:/bin
+#MAIL=someuser # output goes to .(storm|bamboo).cronlog instead
+
+# At boot and every fifteen minutes, ensure that the seed and gateway
+# are running. Output from startup goes to .(storm|bamboo).cronlog, output from
+# daemons goes to .storm.log-gateway and .bamboo.log
+@reboot      source .bashrc ; bamboo-ctrl ensure >>.bamboo.cronlog 2>&1
+*/15 * * * * source .bashrc ; bamboo-ctrl ensure >>.bamboo.cronlog 2>&1
+
+@reboot      source .bashrc ; storm ensure gateway >>.storm.cronlog 2>&1
+*/15 * * * * source .bashrc ; storm ensure gateway >>.storm.cronlog 2>&1
+

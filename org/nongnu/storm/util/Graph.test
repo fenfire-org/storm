@@ -1,0 +1,89 @@
+# -*-Python-*-
+# 
+# Copyright (c) 2003, Benja Fallenstein
+# 
+# This file is part of Storm.
+# 
+# Storm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Storm is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Storm; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+from java.lang import String
+from java.util import HashSet as Set
+from java.io import StringReader, StringWriter, ByteArrayOutputStream
+from org.nongnu.storm.util import Graph
+from org.nongnu.storm.util.Graph import *
+
+nt1 = '''
+# An example N-Triples file
+_:foo <http://example.org/foo/bar> _:bar .
+_:bar <http://example.org/name> "Hello World".
+ _:bar <http://example.org/name> "Hallo Welt"@de .
+
+_:bar  <http://example.org/number> "37"^^<http://www.w3.org/2001/XMLSchema#int>     .
+
+    _:bar <http://example.org/name>   "Hello World" .  
+'''
+
+nt1out = '''\
+_:bar <http://example.org/name> "Hallo Welt"@de.
+_:bar <http://example.org/name> "Hello World".
+_:bar <http://example.org/number> "37"^^<http://www.w3.org/2001/XMLSchema#int>.
+_:foo <http://example.org/foo/bar> _:bar.
+'''
+
+nt1out_replaced = '''\
+<http://flubber/blubb> <http://example.org/name> "Hallo Welt"@de.
+<http://flubber/blubb> <http://example.org/name> "Hello World".
+<http://flubber/blubb> <http://example.org/number> "37"^^<http://www.w3.org/2001/XMLSchema#int>.
+_:foo <http://example.org/foo/bar> <http://flubber/blubb>.
+'''
+
+
+def testReadWriteSimple():
+    g = Graph.read(StringReader(nt1))
+    w = StringWriter()
+    g.write(w)
+    #print w.toString()
+    assert w.toString() == nt1out
+
+    os = ByteArrayOutputStream()
+    g.write(os)
+    s = str(String(os.toByteArray(), "US-ASCII"))
+    #print '<%s> <%s>' % (s, nt1out)
+    assert s == nt1out
+
+    h = g.replace("_:bar", "http://flubber/blubb")
+    w = StringWriter()
+    h.write(w)
+    #print w.toString()
+    assert w.toString() == nt1out_replaced
+
+
+def testMaker():
+    m = Graph.Maker()
+    m.add("_:foo", "http://example.org/foo/bar", "_:bar")
+    m.addPlain("_:bar", "http://example.org/name", "Hello World")
+    m.addPlain("_:bar", "http://example.org/name", "Hallo Welt", "de")
+    m.addInt("_:bar", "http://example.org/number", 37)
+
+    g = m.make()
+
+    w = StringWriter()
+    g.write(w)
+    #print w.toString()
+    assert w.toString() == nt1out
+    

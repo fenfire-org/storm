@@ -1,0 +1,60 @@
+# -*-python-*-
+# 
+# Copyright (c) 2004, Matti J. Katila
+# 
+# This file is part of Storm.
+# 
+# Storm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Storm is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Storm; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+# 
+
+import java, org
+
+from org.nongnu.storm.impl import BerkeleyDBPool
+
+import org.nongnu.storm as storm
+import time
+import os
+
+execfile("org/nongnu/storm/IndexedPool.meta")
+
+os.system('rm -r ./berkeleyTestDir*')
+
+count = 0
+
+def Pool(indexTypes):
+    global count
+
+    set = java.util.HashSet()
+    for el in indexTypes: set.add(el)
+
+    count += 1
+    dir = java.io.File('./berkeleyTestDir%s' % count)
+    dir.mkdir()
+    
+    global pool
+    pool = BerkeleyDBPool(dir, set)
+    return pool
+
+def setUp():
+    global pool
+    pool = Pool([])
+
+def tearDown():
+    global pool
+    #print 'close pool',repr(pool)
+    pool.close()
+    os.system('rm -r ./berkeleyTestDir*')

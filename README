@@ -1,0 +1,201 @@
+=========================
+Storm - permanent storage
+=========================
+
+
+The Storm (STORage Module) library provides an alternative
+to traditional file-based storage. Storm stores data
+in *blocks*. A block is like a file but it cannot be changed,
+and instead of a file name it is identified by a
+cryptographic content hash, like this::
+
+    nkownd7c3yvtk2ll7b3c7m2abg25etb3.3ghrsnouwddhjm4uh6vv4qk6yvdaw46o2jvsmxq
+
+A content hash is a number computed from the content
+of a block. In practice it's impossible to find two blocks
+with the same hash (as long as the algorithm isn't broken).
+
+Don't worry about the 'cannot be changed' part. You can create
+a *reference* that can point to different blocks over time.
+(However, our current implementation is quite crude and
+will be changed; stay tuned for an implementation that
+you can expect to continue to work.)
+
+Here are a few reasons why you would want to use this 
+instead of files:
+
+- When you make a new version of something, the old one
+  doesn't get overwritten. The new version has a new
+  'name' (content hash).
+- You can check whether the content of a block matches
+  its id. If you download a block from somewhere, you
+  can check you got the correct data.
+- Thus, it doesn't matter where you find a block. No matter
+  if it's on your harddisk, sent to you by e-mail, stored
+  in your Web cache, or downloaded from the Web.
+- You don't have to store a block twice, even if you
+  use it in different places. For example, an image used
+  in many different documents would only need to be
+  stored once.
+- Network transparency: When you have a block locally,
+  your computer can use it; when you don't, your computer
+  can go find it on the 'net. (Or on another one of your
+  machines, if the computer you're currently using
+  is connected to them.)
+- When you're offline, any blocks stored on your computer--
+  or a computer connected to it-- can be used just as if
+  you were online.
+
+We are building a P2P system that allows you to find and
+download a block if *anybody* on the 'net publishes it.
+So when the original site is down, or the content
+was removed from it, you can still download
+
+Don't worry that accidentally, there may be two *different* blocks
+with the *same* hash floating around on the Internet.  In theory there
+is an extremely slim possiblity that it *could* happen. But in
+practice, since the number of possible hashes is about an octillion
+times larger than the estimated number of atoms in the universe, we
+can treat it as impossible. We suggest that you worry about something
+more likely instead, like, say, the destruction of Earth through an
+asteroid ;-)
+
+Our software can:
+
+- import existing files as Storm blocks
+- store new data as blocks
+- download blocks from a peer-to-peer (P2P) network
+- check that the hashes of downloaded blocks are correct
+- act as a gateway serving block requests made by http clients
+  (allowing you to browse Storm blocks in your web browser)
+
+
+Networking
+----------
+
+In Storm P2P network, blocks are located using a distributed hash table (DHT)
+based infrastructure. DHT messages come to each peer by UDP protocol at port 
+57083 (configurable  with peer option "-port").
+
+After the block is located, the peer that has published the block serves it
+in response to an HTTP request. The request comes to a port that was the first
+available when the peer started, above or at 37000 (TCP).
+
+A WWW browser can be used to check what certain peer has published. However,
+to retrieve any block through the P2P system, a special gateway HTTP server
+can be started with peer option "-gw 5555", where 5555 is the configurable 
+port number (TCP).
+
+
+Usage
+-----
+
+Before compiling Storm, you should have
+
+* CVS module storm-depends checked out as ../storm-depends
+
+
+Compile with ``make``.
+
+
+Example of importing files into Storm, storing them on local disk directory::
+
+    mkdir ../test-pool
+    make import POOL=../test-pool CT=text/plain FILES=../files/*.txt
+    ls ../test-pool
+
+Example of serving a local pool for http clients::
+
+    make http-gateway POOL=../test-pool
+
+
+Example of setting up P2P:
+
+- start the peer that publishes::
+
+    make peer ARGS="-pub pool -port 2000"
+
+- start a local peer that can fetch the blocks::
+
+    make peer ARGS="-gw 5000 -port 2001 localhost:2000"
+
+- or, start a remote peer that can fetch the blocks::
+
+    make peer ARGS="-gw 5000 -port 2000 fishy.it.jyu.fi:2000"
+
+
+How to set up emacs
+-------------------
+
+(Benja says:) I use Storm with emacs and `eldav`_.
+eldav is available as a Debian package.
+
+.. _eldav: http://www.gohome.org/eldav/
+
+With eldav, you can open a Storm URN by entering
+a filename like this (without the line break)::
+
+    :http://localhost:5555/urn:x-storm:1.0:text/plain,3i42h3s6nnf
+    q2msvx7xzkyayscx5qbyj.lwpnacqdbzryxw3vhjvcj64qbznghohhhzwclnq
+
+Note the leading colon. This works with pointer 
+as well as with block URIs. (But I actually never
+enter these URIs in emacs myself, I use links from
+my web browser; see below.)
+
+Opening a URI from the command line isn't quite
+straightforward. I do it like this:
+
+    emacs -eval '(find-file ":http://localhost:5555/ur
+    n:x-storm:1.0:text/plain,3i42h3s6nnfq2msvx7xzkyays
+    cx5qbyj.lwpnacqdbzryxw3vhjvcj64qbznghohhhzwclnq")'
+
+I've written `a little python script`__ that opens files,
+``http://`` URLs and ``urn:x-storm:`` URIs passed on the
+command line. (It uses `gnuclient`__ to attach to a
+running emacs session, but it could easily be adapted 
+to use emacs directly.)
+
+__ opentext.py
+__ http://www.emacswiki.org/cgi-bin/wiki.pl?GnuClient
+
+I have configured my web browser (Konqueror) to open 
+``text/plain`` resources by passing their URI to this
+Python script. The result is that I can click on a
+Storm link in the browser, and view and edit the
+linked text file in emacs.
+
+Here's how I activate eldav in my ``.emacs`` file::
+
+   (defun trivial-file-writable-p (file) t)
+   (put 'file-writable-p 'eldav 'trivial-file-writable-p)
+   (require 'eldav)
+
+The first two lines disactivate some checks that eldav performs
+before saving a file using HTTP PUT. The checks use WebDAV,
+a superset of HTTP which Storm doesn't implement yet.
+Disactivating the checks allows me to save to a pointer URI
+from inside emacs.
+
+Opening a pointer through my web browser, then editing
+and saving it with emacs normally is quite convenient.
+However, creating to a new pointer isn't convenient
+that way, for me; I prefer to first type some notes
+into an empty file, then save it and give it a name
+if I think it's worth the time (through the Web interface,
+I would have to give the name before I can start editing
+the note).
+
+Therefore, I've put some additional stuff into my ``.emacs``,
+which allows me to save the current buffer to a newly
+created Storm pointer using ``C-x C-j``::
+
+   (defun as-new-pointer (title)
+     (interactive "sPointer name: ")
+     (shell-command-to-string (format "echo -n 'title=%s&target=urn:x-storm:1.0:text%%2fplain,3i42h3s6nnfq2msvx7xzkyayscx5qbyj.lwpnacqdbzryxw3vhjvcj64qbznghohhhzwclnq' > /tmp/newnote.urlencoded" title)) 
+     (write-file (format ":http://localhost:5555/%s" (shell-command-to-string "nd -P /tmp/newnote.urlencoded -T application/x-www-urlencoded http://localhost:5555/new-pointer-plain")))
+   )
+   (global-set-key "\C-x\C-j" 'as-new-pointer)
+
+Of course, you can change the key binding by
+changing the last line.

@@ -1,0 +1,6 @@
+KmdSlave is a shell command KIOSlave. It effectively enables you to feed the output of any arbitrary shell command to any KDE application which uses the KIOSlave architecture. For example, you could use the output of a Perl script as the input for KSpread, or display the output from `ps auxw | grep kdeinit` in a Konqueror window.
+An example command would be kmd:/ps auxw | grep kdeinit
+It also allows you to do things that you can with any other URL eg bookmark them, include them in javascript programs etc.
+This version has a NO_CONFIRM compile option which will disable the confirmation message before executing a command.
+While this makes automation of various tasks (by DCOP for example) simpler, it would open you to malicious URLs, should kmd ever become more mainstream.
+ 
