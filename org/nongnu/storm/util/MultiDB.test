@@ -1,0 +1,98 @@
+# 
+# Copyright (c) 2004, Matti J. Katila
+# This file is part of Strom.
+# 
+# Strom is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Strom is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Strom; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+
+
+""" Test for Database util """
+
+
+import java, org, jarray
+import org.nongnu.storm as storm
+from org.nongnu.storm.util import MultiDB
+
+DIR = './multidb-test-dir/'
+
+def setUp():
+    global db
+    print 'mkdir? ', java.io.File(DIR).mkdirs()
+    db = MultiDB(java.io.File(DIR))
+    db.clear()
+
+def test_1_Create():
+    global db
+    assert db != None
+
+def test_2_PutGet():
+    global db
+    for i in range(100):
+        for j in range(i+50, i+100):
+            db.put(str(i), str(j))
+
+    for i in range(100):
+        l = db.get(str(i)) 
+        assert l != None
+        iter = l.iterator()
+        for j in range(i+50, i+100):
+            assert str(j) == iter.next()
+        assert not iter.hasNext()
+
+    # reread with new instance
+    db = MultiDB(java.io.File(DIR))
+    for i in range(100):
+        l = db.get(str(i)) 
+        assert l != None
+        iter = l.iterator()
+        for j in range(i+50, i+100):
+            assert str(j) == iter.next()
+        assert not iter.hasNext()
+
+
+def test_3_Delete():
+    global db
+    
+    # first test put and get
+    for i in range(100):
+        for j in range(i+50, i+100):
+            db.put(str(i), str(j))
+
+    for i in range(100):
+        l = db.get(str(i)) 
+        assert l != None
+        iter = l.iterator()
+        for j in range(i+50, i+100):
+            assert str(j) == iter.next()
+        assert not iter.hasNext()
+
+    # then delete and check
+    rm = [ 0, 1, 2,  40, 45, 60, 63, 66,67, 90, 97,99, 98]
+    all = range(100)
+    for d in rm:
+        for a in all:
+            assert db.contains(str(a))
+
+        db.remove(str(d))
+        assert not db.contains(str(d))
+        assert db.get(str(d)) == None
+
+        all.remove(d)
+        print all
+        for a in all:
+            assert db.contains(str(a))
+            
+        

@@ -1,0 +1,112 @@
+# 
+# Copyright (c) 2004, Matti J. Katila
+# This file is part of Strom.
+# 
+# Strom is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# Strom is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General
+# Public License along with Strom; if not, write to the Free
+# Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+# 
+
+
+""" Test for Database util """
+
+
+import java, org, jarray
+import org.nongnu.storm as storm
+from org.nongnu.storm.util import DB
+
+DIR = './db-test-dir/'
+
+def setUp():
+    global db
+    print 'mkdir? ', java.io.File(DIR).mkdirs()
+    db = DB(java.io.File(DIR))
+    db.clear()
+
+def testCreate():
+    global db
+    assert db != None
+
+def testPutGet():
+    global db
+    for i in range(100):
+        ins = jarray.zeros(3, 'b')
+        ins[0] =i;
+        ins[1] =i+7;
+        ins[2] =i+56;
+        #print ins
+        db.put(str(i), java.io.ByteArrayInputStream(ins))
+
+    for i in range(100):
+        ins = db.get(str(i))
+        assert ins.read() == i
+        assert ins.read() == i + 7
+        assert ins.read() == i + 56
+        assert ins.read() == -1
+
+    # reread with new instance
+    db = DB(java.io.File(DIR))
+    for i in range(100):
+        ins = db.get(str(i))
+        assert ins.read() == i
+        assert ins.read() == i + 7
+        assert ins.read() == i + 56
+        assert ins.read() == -1
+
+def testDelete():
+    global db
+    
+    # first test put and get
+    for i in range(100):
+        ins = jarray.zeros(3, 'b')
+        ins[0] =i;
+        ins[1] =i+10;
+        ins[2] =i+42;
+        #print ins
+        db.put(str(i), java.io.ByteArrayInputStream(ins))
+
+    for i in range(100):
+        ins = db.get(str(i))
+        assert ins.read() == i
+        assert ins.read() == i + 10
+        assert ins.read() == i + 42
+        assert ins.read() == -1
+
+    # then delete and check
+    rm = [ 0, 1, 2,  40, 45, 60, 63, 66,67, 90, 97,99, 98]
+    all = range(100)
+    for d in rm:
+        for a in all:
+            assert db.contains(str(a))
+            ins = db.get(str(a))
+            assert ins.read() == a
+            assert ins.read() == a + 10
+            assert ins.read() == a + 42
+            assert ins.read() == -1
+
+        db.remove(str(d))
+        assert not db.contains(str(d))
+        assert db.get(str(d)) == None
+
+        all.remove(d)
+        print all
+        for a in all:
+            assert db.contains(str(a))
+            ins = db.get(str(a))
+            assert ins.read() == a
+            assert ins.read() == a + 10
+            assert ins.read() == a + 42
+            assert ins.read() == -1
+            
+        
