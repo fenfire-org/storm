@@ -81,6 +81,9 @@ run-jython:
 createowner:
 	$(JAVA) $(DEBUG) $(PYTHONPATH) org.python.util.jython createowner.py $(TYPE) $(DIR) $(FILE) $(MIME)
 
+copyrighted:
+	python ../fenfire/metacode/copyrighter.py Strom org/
+
 ##########################################################################
 # General documentation targets
 docs:   java-doc navidoc navilink
