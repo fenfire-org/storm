@@ -71,19 +71,12 @@ public class URN5Namespace {
      *  with at least 160 bits of randomness.
      */
     public static synchronized String generateRandomChars() {
-	return generateRandomChars(NAMESPACECHARS);
-    }
-
-    /** Generate a sequence of base64 characters
-     *  with at least 160 bits of randomness.
-     */
-    public static synchronized String generateRandomChars(int length) {
 	if(sr == null)
 	    sr = new SecureRandom();
 
-	StringBuffer chars = new StringBuffer(length);
+	StringBuffer chars = new StringBuffer(NAMESPACECHARS);
 
-	for(int i=0; i<length; i++) {
+	for(int i=0; i<NAMESPACECHARS; i++) {
 	    int x, n=0;
 	    do {
 		x = sr.nextInt(64);
@@ -113,7 +106,8 @@ public class URN5Namespace {
 
     synchronized public String generateId() {
 	long num = nextNumber ++;
-	return "urn:urn-5:" + namespace + ":" + num;
+	// <benja_> [the underscore is] necessary for some rdf serializations
+	return "urn:urn-5:" + namespace + ":_" + num;
     }
 
     /** Get the first part of a Storm data block id.
