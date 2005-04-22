@@ -1,5 +1,5 @@
 /*
-OutputStream2BlockId.java
+InputStream2BlockId.java
  *
  *    Copyright (c) 2002, Benja Fallenstein
  *                  2005, Matti J. Katila
@@ -36,6 +36,8 @@ import com.bitzi.util.*;
  */
 public class InputStream2BlockId { 
 
+    static public final int BLOCKSIZE = 4096;
+
 
     static public BlockId slurp(String contentType, InputStream in) {
 	return slurp(contentType, in, 4096, true);
@@ -63,6 +65,32 @@ public class InputStream2BlockId {
 	} catch (Exception e) {
 	    e.printStackTrace();
 	    throw new Error("NOU");
+	}
+    }
+
+
+    static public String bitprint(InputStream in,
+				  int blockSize, boolean close) {
+	try {
+	    MessageDigest dig_sha1, dig_tt;
+	    dig_sha1 = BlockId.makeSHA1Digest(); dig_sha1.reset();
+	    dig_tt = new TreeTiger(); //BlockId.makeTigerTreeDigest(); 
+	    dig_tt.reset();
+	    
+	    byte[] buf = new byte[blockSize];
+	    while(true) {
+		int r = in.read(buf);
+		if(r == -1) break;
+		dig_sha1.update(buf, 0, r);
+		dig_tt.update(buf, 0, r);
+	    }
+	    if(close) {
+		in.close();
+	    }
+	    return dig_sha1.digest()+"."+dig_tt.digest();
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    throw new Error("NO!");
 	}
     }
 
