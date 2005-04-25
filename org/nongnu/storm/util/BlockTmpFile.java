@@ -45,7 +45,7 @@ public abstract class BlockTmpFile {
 	File f;
 	public RealBlockTmpFile(Block block) 
 		throws IOException, BlockId.WrongIdException {
-	    f = File.createTempFile("blocktmp", "",
+	    f = File.createTempFile("blocktmp", ".tmp",
 		    new File("."));
 	    f.deleteOnExit();
 	    InputStream i = block.getInputStream();

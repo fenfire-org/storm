@@ -95,7 +95,7 @@ public interface DB {
 	File currentFile;
 	private File getFile() throws IOException {
 	    if ((ind++ % FILES) == 0) {
-		currentFile = File.createTempFile("data", "tmp", dir);
+		currentFile = File.createTempFile("data", ".tmp", dir);
 	    }
 	    return currentFile;
 	}
@@ -172,7 +172,7 @@ public interface DB {
 	    sameFile.remove(rmInd);
 
 	    // don't use the same index number!
-	    currentFile = File.createTempFile("data", "tmp", dir);
+	    currentFile = File.createTempFile("data", ".tmp", dir);
 
 	    File newF = getFile();
 	    for (Iterator i = sameFile.iterator(); i.hasNext(); ) {
